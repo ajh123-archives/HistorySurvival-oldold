@@ -21,6 +21,7 @@ Go to the project directory
 Configure CMAKE
 
 ```bash
+  mkdir build
   cd build
   cmake ..
   cd ../
