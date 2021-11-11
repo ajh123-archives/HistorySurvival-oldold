@@ -33,12 +33,12 @@ endif()
 # This is the main part:
 
 include_directories(
-  ${PROJECT_SOURCE_DIR}/inc
+  ${PROJECT_SOURCE_DIR}/include
   ${PROJECT_SOURCE_DIR}/src
 )
 file(GLOB all_SRCS
-  "${PROJECT_SOURCE_DIR}/inc/*.h"
-  "${PROJECT_SOURCE_DIR}/inc/*.hpp"
+  "${PROJECT_SOURCE_DIR}/include/*.h"
+  "${PROJECT_SOURCE_DIR}/includee/*.hpp"
   "${PROJECT_SOURCE_DIR}/src/*.cpp"
   "${PROJECT_SOURCE_DIR}/src/*.c"
 )

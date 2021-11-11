@@ -1,13 +1,8 @@
 #include "raylib.h"
 #include "raymath.h"
-
-#define FLT_MAX     340282346638528859811704183484516925440.0f
-
-#define max(a, b) ((a)>(b)? (a) : (b))
-#define min(a, b) ((a)<(b)? (a) : (b))
+#include <main.h>
 
 // Clamp Vector2 value with min and max and return a new vector2
-// NOTE: Required for virtual mouse, to clamp inside virtual game size
 Vector2 ClampValue(Vector2 value, Vector2 min, Vector2 max)
 {
     Vector2 result = value;
