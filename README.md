@@ -1,5 +1,5 @@
 
-# History Survial
+# History Survival
 
 A simple 3d multiplayer game using [raylib](https://github.com/raysan5/raylib/tree/master/examples)!
 
