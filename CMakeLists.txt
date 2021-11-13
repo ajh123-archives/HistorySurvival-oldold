@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.20)
 project(
     game
     LANGUAGES CXX
@@ -79,15 +79,11 @@ endif()
 
 
 #set(raylib_VERBOSE 1)
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
-target_link_libraries(${PROJECT_NAME} PRIVATE EnTT::EnTT)
-target_link_libraries(${PROJECT_NAME} PRIVATE asio::asio)
+target_link_libraries(${PROJECT_NAME} raylib EnTT::EnTT asio::asio)
 
 # Checks if OSX and links appropriate frameworks (Only required on MacOS)
 if (APPLE)
-    target_link_libraries(${PROJECT_NAME} "-framework IOKit")
-    target_link_libraries(${PROJECT_NAME} "-framework Cocoa")
-    target_link_libraries(${PROJECT_NAME} "-framework OpenGL")
+    target_link_libraries(${PROJECT_NAME} "-framework IOKit -framework Cocoa -framework OpenGL")
 endif()
 
 # That's it! You should have an example executable that you can run. Have fun!
