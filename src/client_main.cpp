@@ -1,5 +1,7 @@
+extern "C" {
 #include "raylib.h"
 #include "raymath.h"
+}
 #include <main.hpp>
 #include <client_main.hpp>
 #include <entt/entt.hpp>
@@ -19,11 +21,11 @@ int client_main(void)
 
     // Define the camera to look into our 3d world
     Camera camera = { 0 };
-    camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
-    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
-    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+    camera.position = { 10.0f, 10.0f, 10.0f }; // Camera position
+    camera.target = { 0.0f, 0.0f, 0.0f };      // Camera looking at point
+    camera.up = { 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
     camera.fovy = 45.0f;                                // Camera field-of-view Y
-    camera.projection = CAMERA_PERSPECTIVE;                   // Camera mode type
+    camera.projection = CAMERA_PERSPECTIVE;             // Camera mode type
 
     Model tower = LoadModel("resources/models/obj/turret.obj");                 // Load OBJ model
     Texture2D texture = LoadTexture("resources/models/obj/turret_diffuse.png"); // Load model texture
@@ -33,20 +35,20 @@ int client_main(void)
     BoundingBox towerBBox = GetMeshBoundingBox(tower.meshes[0]);    // Get mesh bounding box
 
     // Ground quad
-    Vector3 g0 = (Vector3){ -50.0f, 0.0f, -50.0f };
-    Vector3 g1 = (Vector3){ -50.0f, 0.0f,  50.0f };
-    Vector3 g2 = (Vector3){  50.0f, 0.0f,  50.0f };
-    Vector3 g3 = (Vector3){  50.0f, 0.0f, -50.0f };
+    Vector3 g0 = { -50.0f, 0.0f, -50.0f };
+    Vector3 g1 = { -50.0f, 0.0f,  50.0f };
+    Vector3 g2 = {  50.0f, 0.0f,  50.0f };
+    Vector3 g3 = {  50.0f, 0.0f, -50.0f };
 
     // Test triangle
-    Vector3 ta = (Vector3){ -25.0f, 0.5f, 0.0f };
-    Vector3 tb = (Vector3){ -4.0f, 2.5f, 1.0f };
-    Vector3 tc = (Vector3){ -8.0f, 6.5f, 0.0f };
+    Vector3 ta = { -25.0f, 0.5f, 0.0f };
+    Vector3 tb = { -4.0f, 2.5f, 1.0f };
+    Vector3 tc = { -8.0f, 6.5f, 0.0f };
 
     Vector3 bary = { 0.0f, 0.0f, 0.0f };
 
     // Test sphere
-    Vector3 sp = (Vector3){ -30.0f, 5.0f, 5.0f };
+    Vector3 sp = { -30.0f, 5.0f, 5.0f };
     float sr = 4.0f;
 
     Ray ray = { 0 };                    // Picking line ray
