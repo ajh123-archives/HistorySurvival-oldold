@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
+cmake_minimum_required(VERSION 3.22)
 project(
     game
     LANGUAGES CXX
@@ -48,10 +48,13 @@ include_directories(
 )
 file(GLOB all_SRCS
   "${PROJECT_SOURCE_DIR}/include/*.h"
-  "${PROJECT_SOURCE_DIR}/includee/*.hpp"
+  "${PROJECT_SOURCE_DIR}/include/*.hpp"
   "${PROJECT_SOURCE_DIR}/src/*.cpp"
   "${PROJECT_SOURCE_DIR}/src/*.c"
 )
+
+add_definitions(-Dgame_type=1)
+
 add_executable(${PROJECT_NAME} ${all_SRCS})
 #set(raylib_VERBOSE 1)
 target_link_libraries(${PROJECT_NAME} raylib)
