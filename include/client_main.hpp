@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef MAIN_C_H
 #define MAIN_C_H 1
 
