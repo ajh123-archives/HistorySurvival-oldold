@@ -1,15 +1,16 @@
 
 # History Survival
 
-A simple 3d multiplayer game using [raylib](https://github.com/raysan5/raylib/tree/master/examples)!
-
+A simple 3d multiplayer game using
+* [raylib](https://github.com/raysan5/raylib/tree/master/examples)!
+* [entt](https://github.com/skypjack/entt)
 
 ## Run and build Locally with [CMAKE](cmake.org)
 
 Clone the project
 
 ```bash
-  git clone https://github.com/ajh123-development/HistorySurvival
+  git clone --recurse-submodules https://github.com/ajh123-development/HistorySurvival
 ```
 
 Go to the project directory
