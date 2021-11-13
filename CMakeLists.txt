@@ -65,9 +65,19 @@ file(GLOB all_SRCS
   "${PROJECT_SOURCE_DIR}/src/*.c"
 )
 
-add_definitions(-Dgame_type=1)
+option(BUILD_SERVER "Build the server" OFF)
+if(NOT BUILD_SERVER)
+    add_definitions(-Dgame_type=1)
+    add_executable(${PROJECT_NAME} ${all_SRCS})
+    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "game-client")
+endif()
+if(BUILD_SERVER)
+    add_definitions(-Dgame_type=2)
+    add_executable(${PROJECT_NAME} ${all_SRCS})
+    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "game-server")
+endif()
 
-add_executable(${PROJECT_NAME} ${all_SRCS})
+
 #set(raylib_VERBOSE 1)
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
 target_link_libraries(${PROJECT_NAME} PRIVATE EnTT::EnTT)
