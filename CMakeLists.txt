@@ -1,7 +1,15 @@
 cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
-project(game)
+project(
+    game
+    LANGUAGES CXX
+)
 
-set(CMAKE_C_STANDARD 11) # Requires C11 standard
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+    message(FATAL_ERROR "In-source builds not allowed. Please run \"cmake ..\" from the build directory. You may need to delete \"${CMAKE_SOURCE_DIR}/CMakeCache.txt\" first.")
+endif()
+
+set(CMAKE_CXX_STANDARD  11) # Requires C11 standard
 
 # Set this to the minimal version you want to support
 find_package(raylib 3.0 QUIET) # Let CMake search for a raylib-config.cmake
@@ -30,6 +38,8 @@ if (NOT raylib_FOUND) # If there's none, fetch and build raylib
 
 endif()
 
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/entt)
+
 # This is the main part:
 
 include_directories(
@@ -45,6 +55,7 @@ file(GLOB all_SRCS
 add_executable(${PROJECT_NAME} ${all_SRCS})
 #set(raylib_VERBOSE 1)
 target_link_libraries(${PROJECT_NAME} raylib)
+target_link_libraries(${PROJECT_NAME} EnTT::EnTT)
 
 # Checks if OSX and links appropriate frameworks (Only required on MacOS)
 if (APPLE)
