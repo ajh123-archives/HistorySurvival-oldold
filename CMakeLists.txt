@@ -38,6 +38,16 @@ if (NOT raylib_FOUND) # If there's none, fetch and build raylib
 
 endif()
 
+
+include(FetchContent)
+FetchContent_Declare(
+  asiocmake
+  GIT_REPOSITORY "https://github.com/OlivierLDff/asio.cmake"
+  GIT_TAG        "main"
+)
+FetchContent_MakeAvailable(asiocmake)
+
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/entt)
 
 # This is the main part:
@@ -57,8 +67,9 @@ add_definitions(-Dgame_type=1)
 
 add_executable(${PROJECT_NAME} ${all_SRCS})
 #set(raylib_VERBOSE 1)
-target_link_libraries(${PROJECT_NAME} raylib)
-target_link_libraries(${PROJECT_NAME} EnTT::EnTT)
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+target_link_libraries(${PROJECT_NAME} PRIVATE EnTT::EnTT)
+target_link_libraries(${PROJECT_NAME} PRIVATE asio::asio)
 
 # Checks if OSX and links appropriate frameworks (Only required on MacOS)
 if (APPLE)
