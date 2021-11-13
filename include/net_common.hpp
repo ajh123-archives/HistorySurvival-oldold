@@ -20,3 +20,12 @@
 #include <asio/ts/internet.hpp>
 
 #include <net_message.hpp>
+
+#ifndef NET_COMMOM_H
+#define NET_COMMON_H
+namespace hsc {
+	namespace queues {
+
+	}
+}
+#endif
