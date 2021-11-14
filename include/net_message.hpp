@@ -116,7 +116,8 @@ namespace hsc {
 				asio::ip::tcp::socket socket; //This socket points to the remote end
 				asio::io_context& asioContext; //There should be one shared one.
 				hsc::queues::thread_safe_queue<hsc::net::packets::message<T>> messagesOut; //Messages to remote end
-				hsc::queues::thread_safe_queue<hsc::net::packets::owned_message>& messagesIn; //Messages to our end
+				hsc::queues::thread_safe_queue<hsc::net::packets::owned_message<T>>& messagesIn; //Messages to our end
+				
 		};
 	}
 }
