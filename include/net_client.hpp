@@ -18,6 +18,13 @@ namespace hsc{
 					try{
 						connection = std::make_unique<hsc::net::packets::connection<T>>();
 						
+						//Resolve a hostname/ip/domain to allow us to connecc
+						asio::ip::tcp::resolver resolver(context);
+						endpoints = resolver.resolve(host, std::to_string(port));
+						//Actually connect
+						connection->connect(endpoints);
+						asio_thread = std::thread([this]() {context.run(); });
+
 					}catch (std::exception& e){
 						std::cerr << "Exception while connecting to server: "<<e.what()<<std::endl;
 						return false;
@@ -27,11 +34,18 @@ namespace hsc{
 
 				//Disconects from the server
 				void disconnect(){
-
+					if (isConnected()) {
+						connection->disconect();
+					}
+					context.stop();
+					if (asio_thread.joinable()) {
+						asio_thread.join();
+					}
+					connection.release();
 				}
 
 				bool isConnected(){
-					if(connection){
+					if (connection){
 						return connection->isConnected();
 					}
 					return false;
