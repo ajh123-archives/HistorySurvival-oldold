@@ -77,7 +77,48 @@ namespace hsc {
 					return msg;
 				}
 			};
+
+			//Forward Declare the connection
+			template <typename T>
+			class connection;
+
+
+			//Just the same as a normal message but contains a pointer
+			//to the remote connection.
+			template <typename T>
+			struct owned_message{
+				std::shared_ptr<connection<T>> remote = nullptr;
+				message<T> msg;
+
+				//Overide for bit sift left `<<`, allows us to use `std::cout`
+				//for message debuging - as an example.
+				friend std::ostream& operator << (std::ostream& os, const message<T>& msg) {
+					os << msg.msg;
+					return os;
+				}
+			};
 		}
+
+		//Used to represent a connection to a client or server
+		template <typename T>
+		class connection: public std::enable_shared_from_this<connection<T>>{
+			public:
+				connection(){}
+				virtual ~connection(){}
+
+			public:
+				bool connect();
+				bool disconnect();
+				bool isConnected() const;
+				bool send(const hsc::net::packets::message<T>& msg);
+
+			protected:
+				asio::ip::tcp::socket socket; //This socket points to the remote end
+				asio::io_context& asioContext; //There should be one shared one.
+				hsc::queues::thread_safe_queue<hsc::net::packets::message<T>> messagesOut; //Messages to remote end
+				hsc::queues::thread_safe_queue<hsc::net::packets::owned_message>& messagesIn; //Messages to our end
+				
+		};
 	}
 }
 
