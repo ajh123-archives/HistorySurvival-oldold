@@ -1,5 +1,4 @@
 #include <server_main.hpp>
-#include <iostream>
 #include <net_server.hpp>
 
 enum class CustomMsgTypes : uint32_t
