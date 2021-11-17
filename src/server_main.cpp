@@ -25,7 +25,7 @@ protected:
 };
 
 int server_main(void) {
-	CustomServer server(60000);
+	CustomServer server(36676);
 	server.start();
 
 	while (1)
