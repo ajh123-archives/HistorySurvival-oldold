@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <client_main.hpp>
+#include <server_main.hpp>
 #include <net_common.hpp>
 
 
@@ -60,6 +61,7 @@ int main(void)
     }
     if (game_type == GAME_TYPE_SERVER){
         std::cout << "Running as server" << std::endl;
+        return server_main();
     }
     return -1;
 }
