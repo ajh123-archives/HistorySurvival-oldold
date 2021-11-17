@@ -13,7 +13,7 @@ enum class CustomMsgTypes : uint32_t
 class CustomServer : public hsc::net::server_interface<CustomMsgTypes>
 {
 public:
-	CustomServer(uint16_t nPort) : hsc::net::server_interface<CustomMsgTypes>(nPort)
+	CustomServer(uint16_t port, const char* address) : hsc::net::server_interface<CustomMsgTypes>(port, address)
 	{
 
 	}
@@ -25,7 +25,7 @@ protected:
 };
 
 int server_main(void) {
-	CustomServer server(36676);
+	CustomServer server(36676, "0.0.0.0");
 	server.start();
 
 	while (1)

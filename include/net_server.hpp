@@ -8,7 +8,7 @@ namespace hsc {
 		template <typename T>
 		class server_interface {
 		public:
-			server_interface(uint16_t port):asio_acceptor(context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)){
+			server_interface(uint16_t port, const char* address):asio_acceptor(context, asio::ip::tcp::endpoint(asio::ip::address::from_string(address), port)){
 
 			}
 

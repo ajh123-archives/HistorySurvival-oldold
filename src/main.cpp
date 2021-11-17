@@ -35,7 +35,7 @@ int main(void)
         asio::io_service io_service;
         asio::ip::tcp::resolver resolver(io_service);
         asio::ip::tcp::resolver::query query("example.com", "80");
-        asio::ip::tcp::resolver::iterator iter = resolver.resolve(query);
+        asio::ip::tcp::resolver::iterator iter = resolver.resolve(asio::ip::tcp::resolver::query("example.com", "80"));
 
         asio::ip::tcp::endpoint endpoint = iter->endpoint();
         asio::ip::tcp::socket socket(context);
