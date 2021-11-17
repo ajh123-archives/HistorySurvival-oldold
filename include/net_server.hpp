@@ -24,6 +24,7 @@ namespace hsc {
 					std::cerr << "Exception while starting server: " << e.what() << std::endl;
 					return false;
 				}
+				context.restart();
 				std::cout << "Server started!" << std::endl;
 				return true;
 			}
