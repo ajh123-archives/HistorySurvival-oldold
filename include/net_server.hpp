@@ -39,9 +39,13 @@ namespace hsc {
 					[this](std::error_code ec, asio::ip::tcp::socket socket) {
 						if (!ec) {
 							std::cout << "New connection: " << socket.remote_endpoint() << std::endl;
-							std::shared_ptr<connection<T>> new_connection = std::make_shared<connection<T>>(connection<T>::owner::server,
-								context, std::move(socket), messagesIn
-							);
+							
+							std::shared_ptr<connection<T>> new_connection(new connection<T>(
+								connection<T>::owner::server, context, std::move(socket), messagesIn
+							));
+							//std::shared_ptr<connection<T>> new_connection = std::make_shared<connection<T>>(connection<T>::owner::server,
+							//	context, std::move(socket), messagesIn
+							//);
 
 							if (onClientConnect(new_connection)) {
 								connections.push_back(std::move(new_connection));
