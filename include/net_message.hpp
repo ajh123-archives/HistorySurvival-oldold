@@ -86,7 +86,7 @@ namespace hsc {
 
 		//Used to represent a connection to a client or server
 		template <typename T>
-		class connection : std::enable_shared_from_this<hsc::net::connection<T>> {
+		class connection {//: std::enable_shared_from_this<hsc::net::connection<T>> {
 		public:
 			//A connection is "owned" by either a server or a client, and its
 			//behaviour is slightly different bewteen the two.
@@ -96,8 +96,8 @@ namespace hsc {
 				client
 			};
 
-			connection(owner parent, asio::io_context& context, asio::ip::tcp::socket& sock, hsc::queues::thread_safe_queue<hsc::net::packets::owned_message<T>>& messages_in) :
-				asioContext(context), my_socket(sock), messagesIn(messages_in) {
+			connection(owner parent, asio::io_context& context, asio::ip::tcp::socket sock, hsc::queues::thread_safe_queue<hsc::net::packets::owned_message<T>>& messages_in) :
+				asioContext(context), my_socket(std::move(sock)), messagesIn(messages_in) {
 				owner_type = parent;
 			}
 			virtual ~connection() {}
