@@ -23,17 +23,17 @@ namespace hsc {
 			template <typename T>
 			struct message
 			{
-				message_header<T> header;
+				hsc::net::packets::message_header<T> header;
 				std::vector<uint8_t> body;
 
 				//Return the size of the whole packet in bytes
 				size_t size()  const {
-					return sizeof(message_header<T>) + body.size();
+					return sizeof(hsc::net::packets::message_header<T>) + body.size();
 				}
 
 				//Overide for bit sift left `<<`, allows us to use `std::cout`
 				//for message debuging - as an example.
-				friend std::ostream& operator << (std::ostream& os, const message<T>& msg) {
+				friend std::ostream& operator << (std::ostream& os, const hsc::net::packets::message<T>& msg) {
 					os << "id:" << int(msg.header.id) << "\nsize:" << msg.header.size;
 					return os;
 				}
@@ -41,7 +41,7 @@ namespace hsc {
 				//Overide for bit sift left `<<`, allows us to use our
 				//message to push on to, like a stack.
 				template <typename DataType>
-				friend message<T>& operator << (message<T>& msg, const DataType& data) {
+				friend message<T>& operator << (hsc::net::packets::message<T>& msg, const DataType& data) {
 					//Check that data is 'copyable'
 					static_assert(std::is_standard_layout<DataType>::value, "Data is to complex to push!");
 
@@ -61,7 +61,7 @@ namespace hsc {
 				//Overide for bit sift left `>>`, allows us to use our
 				//message to pop off, like a stack.
 				template <typename DataType>
-				friend message<T>& operator >> (message<T>& msg, const DataType& data) {
+				friend hsc::net::packets::message<T>& operator >> (hsc::net::packets::message<T>& msg, const DataType& data) {
 					//Check that data is 'copyable'
 					static_assert(std::is_standard_layout<DataType>::value, "Data is to complex to poped!");
 
@@ -81,6 +81,7 @@ namespace hsc {
 			//to the remote connection.
 			template <typename T>
 			struct owned_message;
+			//This is a forward decleare
 		}
 
 		//Used to represent a connection to a client or server
@@ -95,7 +96,7 @@ namespace hsc {
 				client
 			};
 
-			connection(owner parent, asio::io_context& context, asio::ip::tcp::socket sock, hsc::queues::thread_safe_queue<hsc::net::packets::owned_message<T>>& messages_in) :
+			connection(owner parent, asio::io_context& context, asio::ip::tcp::socket& sock, hsc::queues::thread_safe_queue<hsc::net::packets::owned_message<T>>& messages_in) :
 				asioContext(context), my_socket(sock), messagesIn(messages_in) {
 				owner_type = parent;
 			}
