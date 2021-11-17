@@ -86,7 +86,7 @@ namespace hsc {
 
 		//Used to represent a connection to a client or server
 		template <typename T>
-		class connection : public std::enable_shared_from_this<hsc::net::connection<T>> {
+		class connection : std::enable_shared_from_this<hsc::net::connection<T>> {
 		public:
 			//A connection is "owned" by either a server or a client, and its
 			//behaviour is slightly different bewteen the two.
