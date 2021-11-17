@@ -164,7 +164,7 @@ namespace hsc {
 
 			//AYSNC- Write message headers
 			void writeHeader() {
-				asio::async_write(my_socket, asio::buffer(&messagesOut.front().header, sizeof(message_header<T>)),
+				asio::async_write(my_socket, asio::buffer(&messagesOut.front().header, sizeof(hsc::net::packets::message_header<T>)),
 					[this](std::error_code ec, std::size_t length)
 					{
 						if (!ec) {
