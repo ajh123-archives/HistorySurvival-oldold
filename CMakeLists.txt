@@ -9,9 +9,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
     message(FATAL_ERROR "In-source builds not allowed. Please run \"cmake ..\" from the build directory. You may need to delete \"${CMAKE_SOURCE_DIR}/CMakeCache.txt\" first.")
 endif()
 
-# Requires C11 standard
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_C_STANDARD 11)
+# Requires C17 standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 17)
 
 # Set this to the minimal version you want to support
 find_package(raylib 3.0 QUIET) # Let CMake search for a raylib-config.cmake
@@ -49,6 +49,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(asiocmake)
 
+FetchContent_Declare(
+  argparse
+  GIT_REPOSITORY "https://github.com/p-ranav/argparse"
+  GIT_TAG        "master"
+)
+FetchContent_MakeAvailable(argparse)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/entt)
 
@@ -79,7 +85,7 @@ endif()
 
 
 #set(raylib_VERBOSE 1)
-target_link_libraries(${PROJECT_NAME} raylib EnTT::EnTT asio::asio)
+target_link_libraries(${PROJECT_NAME} raylib EnTT::EnTT asio::asio argparse::argparse )
 
 # Checks if OSX and links appropriate frameworks (Only required on MacOS)
 if (APPLE)

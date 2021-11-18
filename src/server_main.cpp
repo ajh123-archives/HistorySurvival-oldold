@@ -24,8 +24,8 @@ protected:
 	}
 };
 
-int server_main(void) {
-	CustomServer server(36676, "0.0.0.0");
+int server_main(std::string bind_to) {
+	CustomServer server(36676, bind_to.c_str());
 	server.start();
 
 	while (1)

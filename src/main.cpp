@@ -5,6 +5,7 @@
 #include <client_main.hpp>
 #include <server_main.hpp>
 #include <net_common.hpp>
+#include <argparse/argparse.hpp>
 
 
 std::vector<char> buffer(20 * 1024);
@@ -24,44 +25,34 @@ void getData(asio::ip::tcp::socket& socket) {
 }
 
 
-int main(void)
+int main(int argc, char* argv[])
 {
     asio::error_code ec;
     asio::io_context context;
     asio::io_context::work idleWork(context);
     std::thread netThread = std::thread([&]() {context.run(); });
+    argparse::ArgumentParser program("History Survival");
 
     if (game_type == GAME_TYPE_CLIENT){
-        asio::io_service io_service;
-        asio::ip::tcp::resolver resolver(io_service);
-        asio::ip::tcp::resolver::query query("example.com", "80");
-        asio::ip::tcp::resolver::iterator iter = resolver.resolve(asio::ip::tcp::resolver::query("example.com", "80"));
-
-        asio::ip::tcp::endpoint endpoint = iter->endpoint();
-        asio::ip::tcp::socket socket(context);
-        socket.connect(endpoint, ec);
-
-        if (!ec) {
-            std::cout << "Connected" << std::endl;
-            if (socket.is_open()) {
-                getData(socket);
-                std::string request =
-                    "GET /index.html HTTP/1.1\r\n"
-                    "Host: example.com\r\n"
-                    "Connection: close\r\n\r\n";
-                socket.write_some(asio::buffer(request.data(), request.size()), ec);
-            }
-        }
-        else {
-            std::cout << "Failed to connect" << ec.message() << std::endl;
-        }
-
         std::cout << "Running as client" << std::endl;
         return client_main();
     }
     if (game_type == GAME_TYPE_SERVER){
+        program.add_argument("bind")
+            .help("Address to bind the server to")
+            .default_value(std::string("0.0.0.0"));
+
+        try {
+            program.parse_args(argc, argv);
+        }
+        catch (const std::runtime_error& err) {
+            std::cerr << err.what() << std::endl;
+            std::cerr << program;
+            std::exit(1);
+        }
+
         std::cout << "Running as server" << std::endl;
-        return server_main();
+        return server_main(program.get<std::string>("bind"));
     }
     return -1;
 }
