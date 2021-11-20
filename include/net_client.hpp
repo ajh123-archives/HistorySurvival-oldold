@@ -17,14 +17,20 @@ namespace hsc{
 		public:
 			//Connects to a specified server
 			bool connect(const std::string& host, const uint16_t port){
-				try{
-					connection = std::make_unique<hsc::net::packets::connection<T>>();
-						
+				try{					
 					//Resolve a hostname/ip/domain to allow us to connect
 					asio::ip::tcp::resolver resolver(context);
 					endpoints = resolver.resolve(host, std::to_string(port));
+
+					connection = std::make_unique<hsc::net::connection<T>>(
+						connection<T>::owner::client,
+						context,
+						asio::ip::tcp::socket(context),
+						messagesIn
+					);
+
 					//Actually connect
-					connection->connect(endpoints);
+					connection->connectToServer(endpoints);
 					asio_thread = std::thread([this]() {context.run(); });
 
 				}catch (std::exception& e){
@@ -53,6 +59,13 @@ namespace hsc{
 				return false;
 			}
 
+			// Send message to server
+			void send(const hsc::net::packets::message<T>& msg)
+			{
+				if (isConnected())
+					connection->send(msg);
+			}
+
 			//Retrive the mesage input queue
 			hsc::queues::thread_safe_queue<hsc::net::packets::message<T>>& messagesIn(){
 				return messagesIn;
@@ -62,7 +75,7 @@ namespace hsc{
 			asio::io_context context; //This will be pased to our connection
 			std::thread asio_thread; //This is where asio stuff will ocur
 			asio::ip::tcp::socket socket; //This will be used to make our connection
-			std::unique_ptr<hsc::net::packets::connection<T>> connection; //Our connection
+			std::unique_ptr<hsc::net::connection<T>> connection; //Our connection
 
 		private:
 			hsc::queues::thread_safe_queue<hsc::net::packets::message<T>> messagesIn; //Messages to our end

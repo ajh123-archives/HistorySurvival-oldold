@@ -116,14 +116,37 @@ namespace hsc {
 				}
 			}
 
-			void connectToServer();
+			void connectToServer(const asio::ip::tcp::resolver::results_type& endpoints) {
+				if (owner_type == owner::client) {
+					asio::async_connect(my_socket, endpoints, 
+						[this](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
+							if (!ec) {
+								readHeader();
+							}
+						});
+				}
+			}
 
-			bool connect();
-			bool disconnect();
+			bool disconnect() {
+				if (isConnected()) {
+					asio::post(asioContext, [this]() {my_socket.close(); });
+				}
+			}
 			bool isConnected() const {
 				return my_socket.is_open();
 			}
-			bool send(const hsc::net::packets::message<T>& msg);
+			void send(const hsc::net::packets::message<T>& msg) {
+				asio::post(asioContext,
+					[this, msg]()
+					{
+						bool writingMessages = !messagesOut.empty();
+						messagesOut.push_back(msg);
+						if (!writingMessages) {
+							writeHeader();
+						}
+					});
+
+			}
 
 		private:
 			//AYSNC- Read message headers

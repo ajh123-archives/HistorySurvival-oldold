@@ -1,3 +1,4 @@
+#include <net_client.hpp>
 extern "C" {
 #include "raylib.h"
 #include "raymath.h"
@@ -6,6 +7,38 @@ extern "C" {
 #include <client_main.hpp>
 #include <entt/entt.hpp>
 #include <stdio.h>
+
+enum class CustomMsgTypes : uint32_t
+{
+    ServerAccept,
+    ServerDeny,
+    ServerPing,
+    MessageAll,
+    ServerMessage,
+};
+
+class CustomClient : public hsc::net::client_interface<CustomMsgTypes>
+{
+public:
+    void PingServer()
+    {
+        hsc::net::packets::message<CustomMsgTypes> msg;
+        msg.header.id = CustomMsgTypes::ServerPing;
+
+        // Caution with this...
+        std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
+
+        msg << timeNow;
+        send(msg);
+    }
+
+    void MessageAll()
+    {
+        hsc::net::packets::message<CustomMsgTypes> msg;
+        msg.header.id = CustomMsgTypes::MessageAll;
+        send(msg);
+    }
+};
 
 int client_main(void)
 {
