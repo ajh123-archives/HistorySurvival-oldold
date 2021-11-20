@@ -19,7 +19,6 @@ public:
 
 	}
 protected:
-protected:
 	virtual bool onClientConnect(std::shared_ptr<hsc::net::connection<CustomMsgTypes>> client)
 	{
 		hsc::net::packets::message<CustomMsgTypes> msg;

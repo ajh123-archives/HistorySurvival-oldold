@@ -56,6 +56,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(argparse)
 
+FetchContent_Declare(
+  opensslcmake
+  GIT_REPOSITORY "https://github.com/viaduck/openssl-cmake"
+  GIT_TAG        "master"
+)
+FetchContent_MakeAvailable(opensslcmake)
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/entt)
 
 # This is the main part:
@@ -85,7 +92,7 @@ endif()
 
 
 #set(raylib_VERBOSE 1)
-target_link_libraries(${PROJECT_NAME} raylib EnTT::EnTT asio::asio argparse::argparse )
+target_link_libraries(${PROJECT_NAME} raylib EnTT::EnTT asio::asio argparse::argparse ssl crypto )
 
 # Checks if OSX and links appropriate frameworks (Only required on MacOS)
 if (APPLE)
