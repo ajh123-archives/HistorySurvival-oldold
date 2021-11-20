@@ -7,9 +7,8 @@ namespace hsc{
 	namespace net{
 		template <typename T>
 		class client_interface{
-			client_interface(): socket(context){
-
-			}
+		public:
+			client_interface(){}
 			virtual ~client_interface(){
 				disconnect();
 			}
@@ -20,10 +19,10 @@ namespace hsc{
 				try{					
 					//Resolve a hostname/ip/domain to allow us to connect
 					asio::ip::tcp::resolver resolver(context);
-					endpoints = resolver.resolve(host, std::to_string(port));
+					asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
 
 					connection = std::make_unique<hsc::net::connection<T>>(
-						connection<T>::owner::client,
+						hsc::net::connection<T>::owner::client,
 						context,
 						asio::ip::tcp::socket(context),
 						messagesIn
@@ -43,7 +42,7 @@ namespace hsc{
 			//Disconects from the server
 			void disconnect(){
 				if (isConnected()) {
-					connection->disconect();
+					connection->disconnect();
 				}
 				context.stop();
 				if (asio_thread.joinable()) {
@@ -67,18 +66,17 @@ namespace hsc{
 			}
 
 			//Retrive the mesage input queue
-			hsc::queues::thread_safe_queue<hsc::net::packets::message<T>>& messagesIn(){
+			hsc::queues::thread_safe_queue<hsc::net::packets::owned_message<T>>& messagesToUs(){
 				return messagesIn;
 			}
 
 		protected:
 			asio::io_context context; //This will be pased to our connection
 			std::thread asio_thread; //This is where asio stuff will ocur
-			asio::ip::tcp::socket socket; //This will be used to make our connection
 			std::unique_ptr<hsc::net::connection<T>> connection; //Our connection
 
 		private:
-			hsc::queues::thread_safe_queue<hsc::net::packets::message<T>> messagesIn; //Messages to our end
+			hsc::queues::thread_safe_queue<hsc::net::packets::owned_message<T>> messagesIn; //Messages to our end
 		};
 	}
 

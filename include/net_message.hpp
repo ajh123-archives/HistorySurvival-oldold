@@ -61,7 +61,7 @@ namespace hsc {
 				//Overide for bit sift left `>>`, allows us to use our
 				//message to pop off, like a stack.
 				template <typename DataType>
-				friend hsc::net::packets::message<T>& operator >> (hsc::net::packets::message<T>& msg, const DataType& data) {
+				friend hsc::net::packets::message<T>& operator >> (hsc::net::packets::message<T>& msg, DataType& data) {
 					//Check that data is 'copyable'
 					static_assert(std::is_standard_layout<DataType>::value, "Data is to complex to poped!");
 
@@ -127,7 +127,7 @@ namespace hsc {
 				}
 			}
 
-			bool disconnect() {
+			void disconnect() {
 				if (isConnected()) {
 					asio::post(asioContext, [this]() {my_socket.close(); });
 				}
