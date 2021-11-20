@@ -159,7 +159,7 @@ namespace hsc {
 			}
 
 			std::shared_ptr<connection<T>> getConnectionPtr() {
-				return shared_from_this();
+				return this->shared_from_this();
 			}
 
 		private:
