@@ -19,32 +19,32 @@ Go to the project directory
   cd HistorySurvival
 ```
 
-Compile and run the client
+Compile and run the client in Release
 ```bash
   mkdir build
   cd build
   cmake ..
-  cmake --build .
+  cmake --build . --config Release
 
   #Runing
   cd ..
   ./build/game-client
   #Or on windows use if using vs 2022 or > as the cmake generator
-  ./build/Debug/game-client
+  ./build/Release/game-client
 ```
 
-Compile and run the server
+Compile and run the server in Release
 ```bash
   mkdir build
   cd build
   cmake -D BUIlD_SERVER=ON ..
-  cmake --build .
+  cmake --build . --config Release
 
   #Runing
   cd ..
   ./build/game-server
   #Or on windows use if using vs 2022 or > as the cmake generator
-  ./build/Debug/game-server
+  ./build/Release/game-server
 ```
 
 ## Authors

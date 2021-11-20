@@ -86,7 +86,7 @@ namespace hsc {
 
 		//Used to represent a connection to a client or server
 		template <typename T>
-		class connection : std::enable_shared_from_this<hsc::net::connection<T>> {
+		class connection : public std::enable_shared_from_this<connection<T>> {
 		public:
 			//A connection is "owned" by either a server or a client, and its
 			//behaviour is slightly different bewteen the two.
@@ -95,6 +95,16 @@ namespace hsc {
 				server,
 				client
 			};
+
+			friend std::ostream& operator << (std::ostream& os, const owner& my_owner) {
+				if (my_owner == owner::server) {
+					os << "owner_type:[server]";
+				}
+				if (my_owner == owner::client) {
+					os << "owner_type:[client]";
+				}
+				return os;
+			}
 
 			connection(owner parent, asio::io_context& context, asio::ip::tcp::socket sock, hsc::queues::thread_safe_queue<hsc::net::packets::owned_message<T>>& messages_in) :
 				asioContext(context), my_socket(std::move(sock)), messagesIn(messages_in) {
@@ -164,7 +174,7 @@ namespace hsc {
 							}
 						}
 						else {
-							std::cerr << "Error while reading packet header from " << id << std::endl;
+							std::cerr << ec.message() << "Error while reading packet header from " << id << std::endl;
 							my_socket.close();
 						}
 					});
@@ -178,7 +188,7 @@ namespace hsc {
 							addMessageToQueue();
 						}
 						else {
-							std::cerr << "Error while reading packet body from " << id << std::endl;
+							std::cerr << ec.message() << "Error while reading packet body from " << id << std::endl;
 							my_socket.close();
 						}
 					});
@@ -203,7 +213,7 @@ namespace hsc {
 							}
 						}
 						else {
-							std::cout << "Error while writing packet header to " << id << std::endl;
+							std::cout << ec.message() << "Error while writing packet header to " << id << std::endl;
 							my_socket.close();
 						}
 					});
@@ -221,7 +231,7 @@ namespace hsc {
 							}
 						}
 						else {
-							std::cout << "Error while writing packet header to " << id << std::endl;
+							std::cout << ec.message() << "Error while writing packet header to " << id << std::endl;
 							my_socket.close();
 						}
 					});
@@ -229,11 +239,18 @@ namespace hsc {
 
 			//Once a full message is received, add it to the incoming queue
 			void addMessageToQueue() {
-				if (owner_type == owner::server)
-					messagesIn.push_back({ this->shared_from_this(), msgIn });
-				else
-					messagesIn.push_back({ nullptr, msgIn });
-				readHeader();
+				try {
+					if (owner_type == owner::server) {
+						messagesIn.push_back({ this->shared_from_this(), msgIn});
+					}
+					else {
+						messagesIn.push_back({ nullptr, msgIn });
+					}
+					readHeader();
+				}
+				catch (std::exception e) {
+					std::cerr << e.what() << std::endl;
+				}
 			}
 		protected:
 			asio::ip::tcp::socket my_socket; //This socket points to the remote end

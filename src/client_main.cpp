@@ -11,9 +11,9 @@ extern "C" {
 #define NOUSER
 #include <net_client.hpp>
 
-
 enum class CustomMsgTypes : uint32_t
 {
+    InvalidMessage,
     ServerAccept,
     ServerDeny,
     ServerPing,
@@ -47,26 +47,29 @@ public:
 int client_main(std::string addr, int port)
 {
     CustomClient c;
+    std::cout << "Connecting to " << addr << ":" << port << std::endl;
     c.connect(addr, port);
 
-    const int windowWidth = 800;
-    const int windowHeight = 450;
-
-
-    // Enable config flags for resizable window and vertical synchro
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-    InitWindow(windowWidth, windowHeight, "History Survival");
-    SetWindowMinSize(windowWidth, windowHeight);
-
-    // Define the camera to look into our 3d world
-    Camera camera = { 0 };
-    camera.position = { 10.0f, 10.0f, 10.0f }; // Camera position
-    camera.target = { 0.0f, 0.0f, 0.0f };      // Camera looking at point
-    camera.up = { 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
-    camera.fovy = 45.0f;                                // Camera field-of-view Y
-    camera.projection = CAMERA_PERSPECTIVE;             // Camera mode type
-
     if (c.isConnected()) {
+        std::cout << "Connected to " << addr << ":" << port << std::endl;
+
+        const int windowWidth = 800;
+        const int windowHeight = 450;
+
+
+        // Enable config flags for resizable window and vertical synchro
+        SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+        InitWindow(windowWidth, windowHeight, "History Survival");
+        SetWindowMinSize(windowWidth, windowHeight);
+
+        // Define the camera to look into our 3d world
+        Camera camera = { 0 };
+        camera.position = { 10.0f, 10.0f, 10.0f }; // Camera position
+        camera.target = { 0.0f, 0.0f, 0.0f };      // Camera looking at point
+        camera.up = { 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+        camera.fovy = 45.0f;                                // Camera field-of-view Y
+        camera.projection = CAMERA_PERSPECTIVE;             // Camera mode type
+
 
         Model tower = LoadModel("resources/models/obj/turret.obj");                 // Load OBJ model
         Texture2D texture = LoadTexture("resources/models/obj/turret_diffuse.png"); // Load model texture
@@ -105,11 +108,13 @@ int client_main(std::string addr, int port)
         // Main game loops
         while (!WindowShouldClose())        // Detect window close button or ESC key
         {
+            if (!c.isConnected()) {
+                break;
+            }
+
             c.PingServer();
             if (!c.messagesToUs().empty())
             {
-
-                
                 auto msg = c.messagesToUs().pop_front().msg;
 
                 switch (msg.header.id)

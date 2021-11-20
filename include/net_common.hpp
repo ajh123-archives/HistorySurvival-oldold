@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef NET_COMMOM_H
+#define NET_COMMON_H
+
 #include <memory>
 #include <thread>
 #include <mutex>
@@ -11,17 +14,18 @@
 #include <chrono>
 #include <cstdint>
 
+#ifndef NET_COMMOM_H_DEFS
 #ifdef _WIN32
 #define _WIN32_WINNT 0x0A00
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 #define ASIO_STANDALONE
+#endif
 #include <asio.hpp>
 #include <asio/ts/buffer.hpp>
 #include <asio/ts/internet.hpp>
+#define NET_COMMON_H_DEFS
 
-#ifndef NET_COMMOM_H
-#define NET_COMMON_H
 namespace hsc {
 	namespace queues {
 		template <typename T>
@@ -42,14 +46,18 @@ namespace hsc {
 				return deqQueue.back();
 			}
 
-			const T& push_back(const T& item){
+			void push_back(const T& item){
 				std::scoped_lock lock(muxQueue);
-				return deqQueue.emplace_back(std::move(item));
+				deqQueue.emplace_back(std::move(item));
+				std::unique_lock<std::mutex> ul(muxBlocking);
+				cvBlocking.notify_one();
 			}
 
-			const T& push_front(const T& item){
+			void push_front(const T& item){
 				std::scoped_lock lock(muxQueue);
-				return deqQueue.emplace_front(std::move(item));
+				deqQueue.emplace_front(std::move(item));
+				std::unique_lock<std::mutex> ul(muxBlocking);
+				cvBlocking.notify_one();
 			}
 
 			bool empty(){
@@ -65,6 +73,15 @@ namespace hsc {
 			void clear(){
 				std::scoped_lock lock(muxQueue);
 				deqQueue.clear();
+			}
+
+			void wait()
+			{
+				while (empty())
+				{
+					std::unique_lock<std::mutex> ul(muxBlocking);
+					cvBlocking.wait(ul);
+				}
 			}
 
 			T pop_front(){
@@ -84,7 +101,8 @@ namespace hsc {
 		protected:
 			std::mutex muxQueue;
 			std::deque<T> deqQueue;
-			
+			std::condition_variable cvBlocking;
+			std::mutex muxBlocking;
 		};
 	}
 }

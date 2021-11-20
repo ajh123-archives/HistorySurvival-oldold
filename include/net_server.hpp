@@ -41,12 +41,17 @@ namespace hsc {
 						if (!ec) {
 							std::cout << "New connection: " << socket.remote_endpoint() << std::endl;
 							
-							std::shared_ptr<connection<T>> new_connection(new connection<T>(
-								connection<T>::owner::server, context, std::move(socket), messagesIn
-							));
-							//std::shared_ptr<connection<T>> new_connection = std::make_shared<connection<T>>(connection<T>::owner::server,
-							//	context, std::move(socket), messagesIn
-							//);
+							//std::shared_ptr<hsc::net::connection<T>> new_connection(new connection<T>(
+							//	connection<T>::owner::server, context, std::move(socket), messagesIn
+							//));
+		
+							std::shared_ptr<connection<T>> new_connection =
+								std::make_shared<connection<T>>(
+									connection<T>::owner::server,
+									context,
+									std::move(socket), 
+									messagesIn
+							);
 
 							if (onClientConnect(new_connection)) {
 								connections.push_back(std::move(new_connection));
@@ -67,7 +72,7 @@ namespace hsc {
 			}
 
 			//Send a message to a client
-			void sendMessage(std::shared_ptr<connection<T>> client, const hsc::net::packets::message<T> msg) {
+			void sendMessage(std::shared_ptr<hsc::net::connection<T>> client, const hsc::net::packets::message<T> msg) {
 				if (client && client->isConnected()) {
 					client->send(msg);
 				}
@@ -79,7 +84,7 @@ namespace hsc {
 			}
 
 			//Send a message to all clients, and or specify one to ignore
-			void sendMessageAll(const hsc::net::packets::message<T> msg, std::shared_ptr<connection<T>> ignoredClient=nullptr) {
+			void sendMessageAll(const hsc::net::packets::message<T> msg, std::shared_ptr<hsc::net::connection<T>> ignoredClient=nullptr) {
 				bool isInvalidClient = false;
 				for (auto& client : connections) {
 					if (client && client->isConnected()) {
@@ -98,7 +103,8 @@ namespace hsc {
 				}
 			}
 
-			void update(size_t maxMessages = -1){
+			void update(size_t maxMessages = -1, bool wait = false){
+				if (wait) messagesIn.wait();
 				size_t message_count = 0;
 				while (message_count < maxMessages && !messagesIn.empty()) {
 					auto msg = messagesIn.pop_front();
