@@ -158,6 +158,10 @@ namespace hsc {
 
 			}
 
+			std::shared_ptr<connection<T>> getConnectionPtr() {
+				return shared_from_this();
+			}
+
 		private:
 			//AYSNC- Read message headers
 			void readHeader() {
@@ -241,7 +245,7 @@ namespace hsc {
 			void addMessageToQueue() {
 				try {
 					if (owner_type == owner::server) {
-						messagesIn.push_back({ shared_from_this(), msgIn});
+						messagesIn.push_back({ this->getConnectionPtr(), msgIn});
 					}
 					else {
 						messagesIn.push_back({ nullptr, msgIn });
