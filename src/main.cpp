@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
     argparse::ArgumentParser program("History Survival");
 
     if (game_type == GAME_TYPE_CLIENT){
-        program.add_argument("addr")
+        program.add_argument("address")
             .help("Address to connect to")
             .default_value(std::string("0.0.0.0"));
         program.add_argument("port")
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
             std::exit(1);
         }
         std::cout << "Running as client" << std::endl;
-        return client_main(program.get<std::string>("aadr"), program.get<int>("port"));
+        return client_main(program.get<std::string>("address"), program.get<int>("port"));
     }
     if (game_type == GAME_TYPE_SERVER){
         program.add_argument("bind")
