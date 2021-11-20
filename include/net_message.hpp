@@ -241,7 +241,7 @@ namespace hsc {
 			void addMessageToQueue() {
 				try {
 					if (owner_type == owner::server) {
-						messagesIn.push_back({ this->shared_from_this(), msgIn});
+						messagesIn.push_back({ shared_from_this(), msgIn});
 					}
 					else {
 						messagesIn.push_back({ nullptr, msgIn });
