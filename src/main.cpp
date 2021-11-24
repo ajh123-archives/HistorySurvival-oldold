@@ -35,8 +35,7 @@ int main(int argc, char* argv[])
 
     if (game_type == GAME_TYPE_CLIENT){
         program.add_argument("address")
-            .help("Address to connect to")
-            .default_value(std::string("0.0.0.0"));
+            .help("Address to connect to");
         program.add_argument("port")
             .help("Port to connect to")
             .default_value(int(36676));
@@ -54,9 +53,7 @@ int main(int argc, char* argv[])
     }
     if (game_type == GAME_TYPE_SERVER){
         program.add_argument("bind")
-            .help("Address to bind the server to")
-            .default_value(std::string("0.0.0.0"));
-
+            .help("Address to bind the server to");
         try {
             program.parse_args(argc, argv);
         }

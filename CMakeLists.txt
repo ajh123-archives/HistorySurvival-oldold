@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.20)
 project(
     game
@@ -56,12 +57,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(argparse)
 
-FetchContent_Declare(
-  opensslcmake
-  GIT_REPOSITORY "https://github.com/viaduck/openssl-cmake"
-  GIT_TAG        "master"
-)
-FetchContent_MakeAvailable(opensslcmake)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/entt)
 
@@ -92,7 +87,7 @@ endif()
 
 
 #set(raylib_VERBOSE 1)
-target_link_libraries(${PROJECT_NAME} raylib EnTT::EnTT asio::asio argparse::argparse ssl crypto )
+target_link_libraries(${PROJECT_NAME} raylib EnTT::EnTT asio::asio argparse::argparse)
 
 # Checks if OSX and links appropriate frameworks (Only required on MacOS)
 if (APPLE)

@@ -109,6 +109,15 @@ namespace hsc {
 			connection(owner parent, asio::io_context& context, asio::ip::tcp::socket sock, hsc::queues::thread_safe_queue<hsc::net::packets::owned_message<T>>& messages_in) :
 				asioContext(context), my_socket(std::move(sock)), messagesIn(messages_in) {
 				owner_type = parent;
+
+				if (owner_type == owner::server) {
+					handshakeOut = uint64_t(std::chrono::system_clock::now().time_since_epoch().count());
+					handshakeCheck = scramble(handshakeOut);
+				}
+				else {
+					handshakeIn = 0;
+					handshakeOut = 0;
+				}
 			}
 			virtual ~connection() {}
 
@@ -121,7 +130,9 @@ namespace hsc {
 				if (owner_type == owner::server) {
 					if (my_socket.is_open()) {
 						id = uid;
-						readHeader();
+						connectionEstablished = true;
+						writeValidation();
+						readValidation();
 					}
 				}
 			}
@@ -131,7 +142,8 @@ namespace hsc {
 					asio::async_connect(my_socket, endpoints, 
 						[this](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
 							if (!ec) {
-								readHeader();
+								connectionEstablished = true;
+								readValidation();
 							}
 						});
 				}
@@ -163,41 +175,22 @@ namespace hsc {
 			}
 
 		private:
-			//AYSNC- Read message headers
-			void readHeader() {
-				asio::async_read(my_socket, asio::buffer(&msgIn.header, sizeof(hsc::net::packets::message_header<T>)),
+			//AYSNC- Write Validation
+			void writeValidation() {
+				asio::async_write(my_socket, asio::buffer(&handshakeOut, sizeof(uint64_t)),
 					[this](std::error_code ec, std::size_t length)
 					{
 						if (!ec) {
-							if (msgIn.header.size > 0) {
-								msgIn.body.resize(msgIn.header.size);
-								readBody();
-							}
-							else {
-								addMessageToQueue();
+							if (owner_type == owner::client) {
+								readHeader();
 							}
 						}
 						else {
-							std::cerr << ec.message() << "Error while reading packet header from " << id << std::endl;
+							std::cout << ec.message() << "Error while writing validation to " << id << std::endl;
 							my_socket.close();
 						}
 					});
 			}
-			//AYSNC- Read message bodys
-			void readBody() {
-				asio::async_read(my_socket, asio::buffer(msgIn.body.data(), msgIn.body.size()),
-					[this](std::error_code ec, std::size_t length)
-					{
-						if (!ec) {
-							addMessageToQueue();
-						}
-						else {
-							std::cerr << ec.message() << "Error while reading packet body from " << id << std::endl;
-							my_socket.close();
-						}
-					});
-			}
-
 
 			//AYSNC- Write message headers
 			void writeHeader() {
@@ -235,11 +228,93 @@ namespace hsc {
 							}
 						}
 						else {
+							connectionEstablished = false;
 							std::cout << ec.message() << "Error while writing packet header to " << id << std::endl;
 							my_socket.close();
 						}
 					});
 			}
+
+			//AYSNC- Read message headers
+			void readHeader() {
+				asio::async_read(my_socket, asio::buffer(&msgIn.header, sizeof(hsc::net::packets::message_header<T>)),
+					[this](std::error_code ec, std::size_t length)
+					{
+						if (!ec) {
+							if (msgIn.header.size > 0) {
+								msgIn.body.resize(msgIn.header.size);
+								readBody();
+							}
+							else {
+								addMessageToQueue();
+							}
+						}
+						else {
+							std::cerr << ec.message() << "Error while reading packet header from " << id << std::endl;
+							my_socket.close();
+						}
+					});
+			}
+			//AYSNC- Read message bodys
+			void readBody() {
+				asio::async_read(my_socket, asio::buffer(msgIn.body.data(), msgIn.body.size()),
+					[this](std::error_code ec, std::size_t length)
+					{
+						if (!ec) {
+							addMessageToQueue();
+						}
+						else {
+							std::cerr << ec.message() << "Error while reading packet body from " << id << std::endl;
+							my_socket.close();
+						}
+					});
+			}
+
+			//ASYNC- Read validation
+			void readValidation()
+			{
+				asio::async_read(my_socket, asio::buffer(&handshakeIn, sizeof(uint64_t)),
+					[this](std::error_code ec, std::size_t length)
+					{
+						if (!ec)
+						{
+							if (owner_type == owner::server)
+							{
+								if (handshakeIn == handshakeCheck)
+								{
+									std::cout << "Client Validated" << std::endl;
+									validHandshake = true;
+									readHeader();
+								}
+								else
+								{
+									std::cout << "Client " << id << "'s validation failed" << std::endl;
+									validHandshake = false;
+									my_socket.close();
+								}
+							}
+							else
+							{
+								handshakeOut = scramble(handshakeIn);
+								writeValidation();
+							}
+						}
+						else
+						{
+							std::cout << "Error while reading validation from " << id << std::endl;
+							my_socket.close();
+						}
+					});
+			}
+
+			// "Encrypt" data
+			uint64_t scramble(uint64_t input)
+			{
+				uint64_t out = input ^ 0xDEADBEEFC0DECAFE;
+				out = (out & 0xF0F0F0F0F0F0F0) >> 4 | (out & 0x0F0F0F0F0F0F0F) << 4;
+				return out ^ 0xC0DEFACE12345678;
+			}
+
 
 			//Once a full message is received, add it to the incoming queue
 			void addMessageToQueue() {
@@ -263,6 +338,15 @@ namespace hsc {
 			hsc::queues::thread_safe_queue<hsc::net::packets::owned_message<T>>& messagesIn; //Messages to our end
 			hsc::net::packets::message<T> msgIn; //Temporary message holder 
 			owner owner_type = owner::server; //The "owner" decides how the connection behaves
+
+			// Handshake Validation			
+			uint64_t handshakeOut = 0;
+			uint64_t handshakeIn = 0;
+			uint64_t handshakeCheck = 0;
+
+			bool validHandshake = false;
+			bool connectionEstablished = false;
+
 			uint32_t id = 0; //Or ID
 		};
 
