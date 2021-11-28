@@ -1,5 +1,6 @@
 #include <server_main.hpp>
 #include <net_common.hpp>
+#include <unordered_map>
 
 class CustomServer : public hsc::net::server_interface<CustomMsgTypes>
 {
