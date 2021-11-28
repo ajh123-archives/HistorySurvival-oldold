@@ -1,46 +1,32 @@
+#define NOUSER
 #include <main.hpp>
 #include <client_main.hpp>
 #include <entt/entt.hpp>
 #include <stdio.h>
+#include <unordered_map>
+#include <net_common.hpp>
 
-extern "C" {
-#include "raylib.h"
-#include "raymath.h"
-}
-
-#define NOUSER
-#include <net_client.hpp>
-
-enum class CustomMsgTypes : uint32_t
-{
-	InvalidMessage,
-	ServerAccept,
-	ServerDeny,
-	ServerPing,
-	MessageAll,
-	ServerMessage,
-};
 
 class CustomClient : public hsc::net::client_interface<CustomMsgTypes>
 {
+private:
 public:
-	void PingServer()
-	{
-		hsc::net::packets::message<CustomMsgTypes> msg;
-		msg.header.id = CustomMsgTypes::ServerPing;
+	player myPlayer;
+	uint32_t playerID = 0;
+	std::unordered_map<uint32_t, player> players;
+	bool waitngToConnect = true;
 
-		// Caution with this...
-		std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
-
-		msg << timeNow;
-		send(msg);
+	void setPlayer(player player) {
+		myPlayer = player;
+	}
+	
+	void setPlayerID(uint32_t id) {
+		myPlayer.ID = id;
+		playerID = id;
 	}
 
-	void MessageAll()
-	{
-		hsc::net::packets::message<CustomMsgTypes> msg;
-		msg.header.id = CustomMsgTypes::MessageAll;
-		send(msg);
+	void setPlayersID(uint32_t id, player player) {
+		players.insert_or_assign(id, player);
 	}
 };
 
@@ -64,12 +50,12 @@ int client_main(std::string addr, int port)
 
 		// Define the camera to look into our 3d world
 		Camera camera = { 0 };
-		camera.position = { 10.0f, 10.0f, 10.0f }; // Camera position
+		camera.position = { 0.0f, 0.0f, 0.0f }; // Camera position
 		camera.target = { 0.0f, 0.0f, 0.0f };      // Camera looking at point
 		camera.up = { 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
-		camera.fovy = 45.0f;                                // Camera field-of-view Y
-		camera.projection = CAMERA_PERSPECTIVE;             // Camera mode type
-
+		camera.fovy = 45.0f;                       // Camera field-of-view Y
+		camera.projection = CAMERA_PERSPECTIVE;    // Camera mode type
+		c.myPlayer.pos = camera.position;
 
 		Model tower = LoadModel("resources/models/obj/turret.obj");                 // Load OBJ model
 		Texture2D texture = LoadTexture("resources/models/obj/turret_diffuse.png"); // Load model texture
@@ -108,162 +94,196 @@ int client_main(std::string addr, int port)
 		// Main game loops
 		while (!WindowShouldClose())        // Detect window close button or ESC key
 		{
-			if (!c.isConnected()) {
-				break;
-			}
 			if (!c.messagesToUs().empty())
 			{
 				auto msg = c.messagesToUs().pop_front().msg;
 
 				switch (msg.header.id)
 				{
-				case CustomMsgTypes::ServerAccept:
+				case CustomMsgTypes::Client_Accepted:
 				{
-					// Server has responded to a ping request				
+					// Server has accepted us			
 					std::cout << "Server Accepted Connection" << std::endl;
+					hsc::net::packets::message<CustomMsgTypes> msg;
+					msg.header.id = CustomMsgTypes::Client_Register;
+					msg << c.myPlayer;
+					c.send(msg);
+					break;
 				}
-				break;
-
-
-				case CustomMsgTypes::ServerPing:
+				
+				case CustomMsgTypes::Client_SetID:
 				{
-					// Server has responded to a ping request
-					std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
-					std::chrono::system_clock::time_point timeThen;
-					msg >> timeThen;
-					std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << std::endl;
+					// Server has gave us our player
+					uint32_t id;
+					msg >> id;
+					c.setPlayerID(id);
+					std::cout << "Assigned ID "<< c.playerID << std::endl;
+					break;
 				}
-				break;
 
-				case CustomMsgTypes::ServerMessage:
+				case CustomMsgTypes::Game_AddPlayer:
 				{
-					// Server has responded to a ping request	
+					// Server has gave us a new player	
+					player client;
+					msg >> client;
+					c.setPlayersID(client.ID, client);
+					if (client.ID == c.playerID) {
+						c.waitngToConnect = false;
+					}
+					std::cout << "Player " << client.ID << " created" << std::endl;
+					break;
+				}
+
+				case CustomMsgTypes::Game_RemovePlayer:
+				{
+					// Server has gave us an ID to remove
 					uint32_t clientID;
 					msg >> clientID;
-					std::cout << "Hello from [" << clientID << "]" << std::endl;
+					c.players.erase(clientID);
+					if (clientID == c.playerID) {
+						c.waitngToConnect = true;
+					}
+					break;
 				}
-				break;
+
+				case CustomMsgTypes::Game_UpdatePlayer:
+				{
+					// Server has gave us an updated player	
+					player client;
+					msg >> client;
+					c.setPlayersID(client.ID, client);
+					break;
+				}
+
 				}
 			}
-
-			c.PingServer();
+			if (!c.isConnected()) {
+				break;
+			}
 			// Update
 			//----------------------------------------------------------------------------------
 			Vector2 mouse = GetMousePosition();
 			UpdateCamera(&camera);          // Update camera
+			if (!c.waitngToConnect) {
+				c.myPlayer.pos = camera.position;
 
+				// Display information about closest hit
+				RayCollision collision = { 0 };
+				char* hitObjectName = "None";
+				collision.distance = FLT_MAX;
+				collision.hit = false;
+				Color cursorColor = WHITE;
 
-			// Display information about closest hit
-			RayCollision collision = { 0 };
-			char* hitObjectName = "None";
-			collision.distance = FLT_MAX;
-			collision.hit = false;
-			Color cursorColor = WHITE;
+				// Get ray and test against objects
+				ray = GetMouseRay(mouse, camera);
 
-			// Get ray and test against objects
-			ray = GetMouseRay(mouse, camera);
+				// Check ray collision against ground quad
+				RayCollision groundHitInfo = GetRayCollisionQuad(ray, g0, g1, g2, g3);
 
-			// Check ray collision against ground quad
-			RayCollision groundHitInfo = GetRayCollisionQuad(ray, g0, g1, g2, g3);
-
-			if ((groundHitInfo.hit) && (groundHitInfo.distance < collision.distance))
-			{
-				collision = groundHitInfo;
-				cursorColor = GREEN;
-				hitObjectName = "Ground";
-			}
-
-			// Check ray collision against test triangle
-			RayCollision triHitInfo = GetRayCollisionTriangle(ray, ta, tb, tc);
-
-			if ((triHitInfo.hit) && (triHitInfo.distance < collision.distance))
-			{
-				collision = triHitInfo;
-				cursorColor = PURPLE;
-				hitObjectName = "Triangle";
-
-				bary = Vector3Barycenter(collision.point, ta, tb, tc);
-			}
-
-			// Check ray collision against test sphere
-			RayCollision sphereHitInfo = GetRayCollisionSphere(ray, sp, sr);
-
-			if ((sphereHitInfo.hit) && (sphereHitInfo.distance < collision.distance))
-			{
-				collision = sphereHitInfo;
-				cursorColor = ORANGE;
-				hitObjectName = "Sphere";
-			}
-
-			// Check ray collision against bounding box first, before trying the full ray-mesh test
-			RayCollision boxHitInfo = GetRayCollisionBox(ray, towerBBox);
-
-			if ((boxHitInfo.hit) && (boxHitInfo.distance < collision.distance))
-			{
-				collision = boxHitInfo;
-				cursorColor = ORANGE;
-				hitObjectName = "Box";
-
-				// Check ray collision against model
-				// NOTE: It considers model.transform matrix!
-				RayCollision meshHitInfo = GetRayCollisionModel(ray, tower);
-
-				if (meshHitInfo.hit)
+				if ((groundHitInfo.hit) && (groundHitInfo.distance < collision.distance))
 				{
-					collision = meshHitInfo;
-					cursorColor = ORANGE;
-					hitObjectName = "Mesh";
+					collision = groundHitInfo;
+					cursorColor = GREEN;
+					hitObjectName = "Ground";
 				}
+
+				// Check ray collision against test triangle
+				RayCollision triHitInfo = GetRayCollisionTriangle(ray, ta, tb, tc);
+
+				if ((triHitInfo.hit) && (triHitInfo.distance < collision.distance))
+				{
+					collision = triHitInfo;
+					cursorColor = PURPLE;
+					hitObjectName = "Triangle";
+
+					bary = Vector3Barycenter(collision.point, ta, tb, tc);
+				}
+
+				// Check ray collision against test sphere
+				RayCollision sphereHitInfo = GetRayCollisionSphere(ray, sp, sr);
+
+				if ((sphereHitInfo.hit) && (sphereHitInfo.distance < collision.distance))
+				{
+					collision = sphereHitInfo;
+					cursorColor = ORANGE;
+					hitObjectName = "Sphere";
+				}
+
+				// Check ray collision against bounding box first, before trying the full ray-mesh test
+				RayCollision boxHitInfo = GetRayCollisionBox(ray, towerBBox);
+
+				if ((boxHitInfo.hit) && (boxHitInfo.distance < collision.distance))
+				{
+					collision = boxHitInfo;
+					cursorColor = ORANGE;
+					hitObjectName = "Box";
+
+					// Check ray collision against model
+					// NOTE: It considers model.transform matrix!
+					RayCollision meshHitInfo = GetRayCollisionModel(ray, tower);
+
+					if (meshHitInfo.hit)
+					{
+						collision = meshHitInfo;
+						cursorColor = ORANGE;
+						hitObjectName = "Mesh";
+					}
+				}
+				//----------------------------------------------------------------------------------
+
+				// Draw
+				//----------------------------------------------------------------------------------
+				// Draw everything in the render texture, note this will not be rendered on screen, yet
+				BeginDrawing();
+				ClearBackground(BLACK);  // Clear render texture background color
+
+				BeginMode3D(camera);
+
+
+				// Draw the tower
+				// WARNING: If scale is different than 1.0f,
+				// not considered by GetRayCollisionModel()
+				DrawModel(tower, towerPos, 1.0f, WHITE);
+
+				// Draw the test triangle
+				DrawLine3D(ta, tb, PURPLE);
+				DrawLine3D(tb, tc, PURPLE);
+				DrawLine3D(tc, ta, PURPLE);
+
+				// Draw the test sphere
+				DrawSphereWires(sp, sr, 8, 8, PURPLE);
+
+				// Draw the mesh bbox if we hit it
+				if (boxHitInfo.hit) DrawBoundingBox(towerBBox, LIME);
+
+				// If we hit something, draw the cursor at the hit point
+				if (collision.hit)
+				{
+					DrawCube(collision.point, 0.3f, 0.3f, 0.3f, cursorColor);
+					DrawCubeWires(collision.point, 0.3f, 0.3f, 0.3f, RED);
+
+					Vector3 normalEnd;
+					normalEnd.x = collision.point.x + collision.normal.x;
+					normalEnd.y = collision.point.y + collision.normal.y;
+					normalEnd.z = collision.point.z + collision.normal.z;
+
+					DrawLine3D(collision.point, normalEnd, RED);
+				}
+
+				EndMode3D();
+
+				// for (int i = 0; i < 10; i++) DrawRectangle(0, (gameScreenHeight/10)*i, gameScreenWidth, gameScreenHeight/10, colors[i]);
+
+				DrawText("If executed inside a window,\nyou can resize the window,\nand see the screen scaling!", 10, 25, 20, WHITE);
+				DrawText(TextFormat("Default Mouse: [%i , %i]", (int)mouse.x, (int)mouse.y), 350, 25, 20, GREEN);
+
+				EndDrawing();
 			}
-			//----------------------------------------------------------------------------------
 
-			// Draw
-			//----------------------------------------------------------------------------------
-			// Draw everything in the render texture, note this will not be rendered on screen, yet
-			BeginDrawing();
-			ClearBackground(BLACK);  // Clear render texture background color
-
-			BeginMode3D(camera);
-
-
-			// Draw the tower
-			// WARNING: If scale is different than 1.0f,
-			// not considered by GetRayCollisionModel()
-			DrawModel(tower, towerPos, 1.0f, WHITE);
-
-			// Draw the test triangle
-			DrawLine3D(ta, tb, PURPLE);
-			DrawLine3D(tb, tc, PURPLE);
-			DrawLine3D(tc, ta, PURPLE);
-
-			// Draw the test sphere
-			DrawSphereWires(sp, sr, 8, 8, PURPLE);
-
-			// Draw the mesh bbox if we hit it
-			if (boxHitInfo.hit) DrawBoundingBox(towerBBox, LIME);
-
-			// If we hit something, draw the cursor at the hit point
-			if (collision.hit)
-			{
-				DrawCube(collision.point, 0.3f, 0.3f, 0.3f, cursorColor);
-				DrawCubeWires(collision.point, 0.3f, 0.3f, 0.3f, RED);
-
-				Vector3 normalEnd;
-				normalEnd.x = collision.point.x + collision.normal.x;
-				normalEnd.y = collision.point.y + collision.normal.y;
-				normalEnd.z = collision.point.z + collision.normal.z;
-
-				DrawLine3D(collision.point, normalEnd, RED);
-			}
-
-			EndMode3D();
-
-			// for (int i = 0; i < 10; i++) DrawRectangle(0, (gameScreenHeight/10)*i, gameScreenWidth, gameScreenHeight/10, colors[i]);
-
-			DrawText("If executed inside a window,\nyou can resize the window,\nand see the screen scaling!", 10, 25, 20, WHITE);
-			DrawText(TextFormat("Default Mouse: [%i , %i]", (int)mouse.x, (int)mouse.y), 350, 25, 20, GREEN);
-
-			EndDrawing();
+			hsc::net::packets::message<CustomMsgTypes> msg;
+			msg.header.id = CustomMsgTypes::Game_UpdatePlayer;
+			msg << c.players[c.playerID];
+			c.send(msg);
 			//--------------------------------------------------------------------------------------
 		}
 
